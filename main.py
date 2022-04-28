@@ -1,23 +1,51 @@
 import matplotlib.pyplot as plt 
 import numpy as np
-from math import sqrt
+from math import sin, cos, sqrt, asin
+
+# Layer boundaries and material properties
 
 y_layer = [-0.02, -0.01, 0.01, 0.02]
 rho = [0.0]
 E = [1e9]
 
-w_max = 0.05
-r_back = 0.25
-r_belly = 0.1
+# Section geometry
+
+w_nominal = 0.05
+r_back_center = 0.25
+r_back_edges = 0.002
+
+r_belly_center = 0.1
+r_belly_edges = 0.005
+
+def positive_arc_x(x_center, y_center, r, y):
+    return sqrt(r**2 - (y - y_center)**2) + x_center
+
+def negative_arc_x(x_center, y_center, r, y):
+    return -sqrt(r**2 - (y - y_center)**2) + x_center
 
 def width(y):
-    # TODO: Check domain of sqrt functions
-    w_back = 2*sqrt(r_back**2 - (y - y_layer[-1] + r_back)**2)
-    w_belly = 2*sqrt(r_belly**2 - (y - y_layer[0] - r_belly)**2)
+    y_back = y_layer[-1]
+    y_belly = y_layer[0]
 
-    return min(w_max, w_back, w_belly)
+    alpha_back_center = asin((w_nominal/2 - r_back_edges)/(r_back_center - r_back_edges))
+    alpha_belly_center = asin((w_nominal/2 - r_belly_edges)/(r_belly_center - r_belly_edges))
 
-    #return 0.05 - 15.0*y**2
+    y_back_center = y_back + r_back_center*(cos(alpha_back_center) - 1)
+    y_back_edges = y_back_center - r_back_edges*cos(alpha_back_center)
+
+    y_belly_center = y_belly - r_belly_center*(cos(alpha_belly_center) - 1)
+    y_belly_edges = y_belly_center + r_belly_edges*cos(alpha_belly_center)
+
+    if y_back >= y >= y_back_center:
+        return 2*positive_arc_x(0, y_back - r_back_center, r_back_center, y)
+    if y_back_center >= y >= y_back_edges:
+        return 2*positive_arc_x((r_back_center - r_back_edges)*sin(alpha_back_center), y_back - r_back_center + (r_back_center - r_back_edges)*cos(alpha_back_center), r_back_edges, y)
+    if y_belly_edges >= y >= y_belly_center:
+        return 2*positive_arc_x((r_belly_center - r_belly_edges)*sin(alpha_belly_center), y_belly + r_belly_center - (r_belly_center - r_belly_edges)*cos(alpha_belly_center), r_belly_edges, y)
+    if y_belly_center >= y >= y_belly:
+        return 2*positive_arc_x(0, r_belly_center - y_back, r_belly_center, y)
+    else:
+        return w_nominal
 
 # Plot layers
 for yi in y_layer:
