@@ -1,0 +1,1 @@
+Python prototype for non-rectangular, layered cross sections in [VirtualBow](https://github.com/bow-simulation/virtualbow).
